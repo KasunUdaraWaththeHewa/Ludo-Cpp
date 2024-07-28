@@ -1,0 +1,3 @@
+C:/Kasun Udara/Projects/Project/Ludo/C++ Version/cmake-build-debug/CMakeFiles/C___Version.dir
+C:/Kasun Udara/Projects/Project/Ludo/C++ Version/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Kasun Udara/Projects/Project/Ludo/C++ Version/cmake-build-debug/CMakeFiles/rebuild_cache.dir
