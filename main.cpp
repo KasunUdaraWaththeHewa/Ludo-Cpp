@@ -179,64 +179,80 @@ int chooseToStart(int numPlayers) {
 }
 
 void playerTurn(Player& player, const Board& board) {
-    int diceRoll = rollDice();
-    cout << "You rolled a " << diceRoll << endl;
+    int maxChances = 3; // Maximum number of chances per turn
+    int chances = 0; // Counter for the number of chances used
 
-    if (diceRoll == 6) {
-        if (!player.hasTokensInPlay()) {
-            // If no tokens are in play, enter a new token into play
-            cout << "You rolled a 6. No tokens are in play, so you must enter a token into play.\n";
-            player.enterTokenIntoPlay();
-        } else {
-            // If one to three tokens are in play, give the player a choice
-            cout << "You rolled a 6. Choose an option:\n";
-            cout << "1. Move a token 6 spaces.\n";
-            cout << "2. Enter a new token into play.\n";
-            int choice;
-            cin >> choice;
-            if (choice == 1) {
-                // Prompt the user to choose a token to move 6 spaces
-                cout << "Choose a token to move 6 spaces (1-" << player.tokens.size() << "):\n";
-                int tokenIndex;
-                cin >> tokenIndex;
-                while (tokenIndex < 1 || tokenIndex > player.tokens.size() || !player.tokens[tokenIndex - 1].inPlay) {
-                    cout << "Invalid choice. Choose a valid token to move 6 spaces (1-" << player.tokens.size() << "):\n";
-                    cin >> tokenIndex;
-                }
-                player.moveToken(tokenIndex - 1, 6, board);
-            } else if (choice == 2) {
+    while (chances < maxChances) {
+        int diceRoll = rollDice();
+        cout << "You rolled a " << diceRoll << endl;
+
+        if (diceRoll == 6) {
+            if (!player.hasTokensInPlay()) {
+                // If no tokens are in play, enter a new token into play
+                cout << "You rolled a 6. No tokens are in play, so you must enter a token into play.\n";
                 player.enterTokenIntoPlay();
             } else {
-                cout << "Invalid choice. Try again.\n";
-            }
-        }
-    } else {
-        if (player.hasTokensInPlay()) {
-            if (player.onlyOneTokenInPlay()) {
-                // Automatically move the only token in play if it's not a 6
-                for (int i = 0; i < player.tokens.size(); i++) {
-                    if (player.tokens[i].inPlay) {
-                        cout << "Automatically moving the only token in play " << diceRoll << " spaces.\n";
-                        player.moveToken(i, diceRoll, board);
-                        break;
+                // If one to three tokens are in play, give the player a choice
+                int choice = 0;
+                while (choice != 1 && choice != 2) {
+                    cout << "You rolled a 6. Choose an option:\n";
+                    cout << "1. Move a token 6 spaces.\n";
+                    cout << "2. Enter a new token into play.\n";
+                    cin >> choice;
+                    if (choice != 1 && choice != 2) {
+                        cout << "Invalid choice. Try again.\n";
                     }
                 }
-            } else {
-                // Prompt the user to choose a token to move
-                cout << "Choose a token to move " << diceRoll << " spaces (1-" << player.tokens.size() << "):\n";
-                int tokenIndex;
-                cin >> tokenIndex;
-                while (tokenIndex < 1 || tokenIndex > player.tokens.size() || !player.tokens[tokenIndex - 1].inPlay) {
-                    cout << "Invalid choice. Choose a valid token to move " << diceRoll << " spaces (1-" << player.tokens.size() << "):\n";
+                if (choice == 1) {
+                    // Prompt the user to choose a token to move 6 spaces
+                    cout << "Choose a token to move 6 spaces (1-" << player.tokens.size() << "):\n";
+                    int tokenIndex;
                     cin >> tokenIndex;
+                    while (tokenIndex < 1 || tokenIndex > player.tokens.size() || !player.tokens[tokenIndex - 1].inPlay) {
+                        cout << "Invalid choice. Choose a valid token to move 6 spaces (1-" << player.tokens.size() << "):\n";
+                        cin >> tokenIndex;
+                    }
+                    player.moveToken(tokenIndex - 1, 6, board);
+                } else if (choice == 2) {
+                    player.enterTokenIntoPlay();
                 }
-                player.moveToken(tokenIndex - 1, diceRoll, board);
+            }
+            chances++; // Increase the chance count for each 6 rolled
+            if (chances >= maxChances) {
+                cout << "You have used all your chances for this turn.\n";
+                break;
             }
         } else {
-            cout << "No tokens are in play. You must roll a 6 to enter a token into play.\n";
+            // If it's not a 6, just move the token as usual
+            if (player.hasTokensInPlay()) {
+                if (player.onlyOneTokenInPlay()) {
+                    // Automatically move the only token in play if it's not a 6
+                    for (int i = 0; i < player.tokens.size(); i++) {
+                        if (player.tokens[i].inPlay) {
+                            cout << "Automatically moving the only token in play " << diceRoll << " spaces.\n";
+                            player.moveToken(i, diceRoll, board);
+                            break;
+                        }
+                    }
+                } else {
+                    // Prompt the user to choose a token to move
+                    cout << "Choose a token to move " << diceRoll << " spaces (1-" << player.tokens.size() << "):\n";
+                    int tokenIndex;
+                    cin >> tokenIndex;
+                    while (tokenIndex < 1 || tokenIndex > player.tokens.size() || !player.tokens[tokenIndex - 1].inPlay) {
+                        cout << "Invalid choice. Choose a valid token to move " << diceRoll << " spaces (1-" << player.tokens.size() << "):\n";
+                        cin >> tokenIndex;
+                    }
+                    player.moveToken(tokenIndex - 1, diceRoll, board);
+                }
+            } else {
+                cout << "No tokens are in play. You must roll a 6 to enter a token into play.\n";
+            }
+            break; // Exit the turn after rolling anything other than 6
         }
     }
 }
+
 
 int main() {
     srand(time(0));
