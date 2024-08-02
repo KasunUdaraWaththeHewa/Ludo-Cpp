@@ -184,25 +184,18 @@ void playerTurn(Player& player, const Board& board) {
 
     if (diceRoll == 6) {
         if (!player.hasTokensInPlay()) {
+            // If no tokens are in play, enter a new token into play
             cout << "You rolled a 6. No tokens are in play, so you must enter a token into play.\n";
             player.enterTokenIntoPlay();
-        } else if (player.onlyOneTokenInPlay()) {
-            cout << "You rolled a 6 and you only have one token in play. Moving the token 6 spaces.\n";
-            for (int i = 0; i < player.tokens.size(); i++) {
-                if (player.tokens[i].inPlay) {
-                    player.moveToken(i, 6, board);
-                    break;
-                }
-            }
         } else {
+            // If one to three tokens are in play, give the player a choice
             cout << "You rolled a 6. Choose an option:\n";
-            cout << "1. Move a token into play.\n";
-            cout << "2. Move a token 6 spaces.\n";
+            cout << "1. Move a token 6 spaces.\n";
+            cout << "2. Enter a new token into play.\n";
             int choice;
             cin >> choice;
             if (choice == 1) {
-                player.enterTokenIntoPlay();
-            } else if (choice == 2) {
+                // Prompt the user to choose a token to move 6 spaces
                 cout << "Choose a token to move 6 spaces (1-" << player.tokens.size() << "):\n";
                 int tokenIndex;
                 cin >> tokenIndex;
@@ -211,6 +204,8 @@ void playerTurn(Player& player, const Board& board) {
                     cin >> tokenIndex;
                 }
                 player.moveToken(tokenIndex - 1, 6, board);
+            } else if (choice == 2) {
+                player.enterTokenIntoPlay();
             } else {
                 cout << "Invalid choice. Try again.\n";
             }
@@ -218,6 +213,7 @@ void playerTurn(Player& player, const Board& board) {
     } else {
         if (player.hasTokensInPlay()) {
             if (player.onlyOneTokenInPlay()) {
+                // Automatically move the only token in play if it's not a 6
                 for (int i = 0; i < player.tokens.size(); i++) {
                     if (player.tokens[i].inPlay) {
                         cout << "Automatically moving the only token in play " << diceRoll << " spaces.\n";
@@ -226,6 +222,7 @@ void playerTurn(Player& player, const Board& board) {
                     }
                 }
             } else {
+                // Prompt the user to choose a token to move
                 cout << "Choose a token to move " << diceRoll << " spaces (1-" << player.tokens.size() << "):\n";
                 int tokenIndex;
                 cin >> tokenIndex;
@@ -240,7 +237,6 @@ void playerTurn(Player& player, const Board& board) {
         }
     }
 }
-
 
 int main() {
     srand(time(0));
