@@ -3,18 +3,20 @@
 #include <ctime>
 #include <vector>
 #include <limits>
+#include <algorithm>
 
 using namespace std;
 
 const int HOME_POSITION = 100;
 const int BOARD_SIZE = 52;
+const vector<int> START_POSITIONS = {0, 13, 26, 39}; // Define starting positions for 4 players
 
 class Board {
 public:
     static vector<int> getPathForPlayer(int playerIndex) {
         vector<int> path(BOARD_SIZE);
         for (int i = 0; i < BOARD_SIZE; i++) {
-            path[i] = i; // Linear path
+            path[i] = (START_POSITIONS[playerIndex] + i) % BOARD_SIZE; // Circular path starting from player's start position
         }
         return path;
     }
@@ -34,18 +36,21 @@ public:
         if (position == -1) {
             return;
         }
-        position += steps;
-        if (position >= BOARD_SIZE) {
-            position -= BOARD_SIZE;
+
+        auto it = find(path.begin(), path.end(), position);
+        if (it == path.end()) {
+            cout << "Error: Current position not found in path." << endl;
+            return;
         }
-        position = path[position];
+
+        int currentPositionIndex = distance(path.begin(), it);
+        int newPositionIndex = (currentPositionIndex + steps) % path.size();
+        position = path[newPositionIndex];
     }
 
-
-
-    void enterPlay() {
+    void enterPlay(int startPos) {
         if (!inPlay) {
-            position = 0; // Enter the board
+            position = startPos; // Enter the board at the player's start position
             inPlay = true;
         }
     }
@@ -105,7 +110,7 @@ public:
     void enterTokenIntoPlay() {
         for (auto& token : tokens) {
             if (!token.inPlay) {
-                token.enterPlay();
+                token.enterPlay(START_POSITIONS[playerIndex]);
                 break;
             }
         }
@@ -115,19 +120,18 @@ public:
 void displayBoard(const vector<Player>& players) {
     cout << "\nCurrent Board:\n";
     for (int i = 0; i < players.size(); i++) {
-        cout << "Player " << i + 1 << " Tokens: ";
+        cout << "Player " << i + 1 << " tokens: ";
         for (const auto& token : players[i].tokens) {
-            if (token.position == -1) {
-                cout << "Out ";
-            } else if (token.hasWon()) {
-                cout << "Home ";
-            } else {
+            if (token.hasWon()) {
+                cout << "H "; // Token has won and is at the home position
+            } else if (token.inPlay) {
                 cout << token.position << " ";
+            } else {
+                cout << "NP "; // NP for Not in Play
             }
         }
         cout << endl;
     }
-    cout << "\n";
 }
 
 int rollDice() {
@@ -219,99 +223,89 @@ void playerTurn(Player& player, const Board& board) {
                         int tokenIndex;
                         cin >> tokenIndex;
                         while (tokenIndex < 1 || tokenIndex > player.tokens.size() || !player.tokens[tokenIndex - 1].inPlay) {
-                            cout << "Invalid choice. Choose a valid token to move 6 spaces (1-" << player.tokens.size() << "):\n";
+                            cout << "Invalid choice. Try again:\n";
                             cin >> tokenIndex;
                         }
                         player.moveToken(tokenIndex - 1, 6, board);
-                    } else if (choice == 2) {
+                    } else {
+                        // Enter a new token into play
                         player.enterTokenIntoPlay();
                     }
                 } else {
-                    // If no tokens are left to be entered, automatically move a token
-                    cout << "All tokens are in play. Automatically moving a token 6 spaces.\n";
-                    for (int i = 0; i < player.tokens.size(); i++) {
-                        if (player.tokens[i].inPlay && !player.tokens[i].hasWon()) {
-                            player.moveToken(i, 6, board);
-                            break;
-                        }
-                    }
-                }
-            }
-            chances++; // Increase the chance count for each 6 rolled
-            if (chances >= maxChances) {
-                cout << "You have used all your chances for this turn.\n";
-                break;
-            }
-        } else {
-            // If it's not a 6, just move the token as usual
-            if (player.hasTokensInPlay()) {
-                if (player.onlyOneTokenInPlay()) {
-                    // Automatically move the only token in play if it's not a 6
-                    for (int i = 0; i < player.tokens.size(); i++) {
-                        if (player.tokens[i].inPlay) {
-                            cout << "Automatically moving the only token in play " << diceRoll << " spaces.\n";
-                            player.moveToken(i, diceRoll, board);
-                            break;
-                        }
-                    }
-                } else {
-                    // Prompt the user to choose a token to move
-                    cout << "Choose a token to move " << diceRoll << " spaces (1-" << player.tokens.size() << "):\n";
+                    // No tokens are out of play, so move a token 6 spaces
+                    cout << "You rolled a 6. No tokens are out of play, so you must move a token 6 spaces.\n";
+                    cout << "Choose a token to move 6 spaces (1-" << player.tokens.size() << "):\n";
                     int tokenIndex;
                     cin >> tokenIndex;
                     while (tokenIndex < 1 || tokenIndex > player.tokens.size() || !player.tokens[tokenIndex - 1].inPlay) {
-                        cout << "Invalid choice. Choose a valid token to move " << diceRoll << " spaces (1-" << player.tokens.size() << "):\n";
+                        cout << "Invalid choice. Try again:\n";
                         cin >> tokenIndex;
                     }
-                    player.moveToken(tokenIndex - 1, diceRoll, board);
+                    player.moveToken(tokenIndex - 1, 6, board);
                 }
-            } else {
-                cout << "No tokens are in play. You must roll a 6 to enter a token into play.\n";
             }
-            break; // Exit the turn after rolling anything other than 6
+            chances++;
+        } else {
+            if (player.onlyOneTokenInPlay()) {
+                for (int i = 0; i < player.tokens.size(); i++) {
+                    if (player.tokens[i].inPlay) {
+                        player.moveToken(i, diceRoll, board);
+                        break;
+                    }
+                }
+            } else if (player.hasTokensInPlay()) {
+                cout << "Choose a token to move " << diceRoll << " spaces (1-" << player.tokens.size() << "):\n";
+                int tokenIndex;
+                cin >> tokenIndex;
+                while (tokenIndex < 1 || tokenIndex > player.tokens.size() || !player.tokens[tokenIndex - 1].inPlay) {
+                    cout << "Invalid choice. Try again:\n";
+                    cin >> tokenIndex;
+                }
+                player.moveToken(tokenIndex - 1, diceRoll, board);
+            } else {
+                cout << "No tokens in play and you did not roll a 6. Turn skipped.\n";
+            }
+            break;
         }
     }
 }
-
 
 int main() {
     srand(time(0));
     int numPlayers;
 
     while (true) {
-        cout << "Please Select Player Count (2-4): ";
+        cout << "Enter the number of players (2-4): ";
         cin >> numPlayers;
-        cout << "\n";
-
         if (numPlayers >= 2 && numPlayers <= 4) {
             break;
         }
-        cout << "Invalid player count. Try again.\n";
+        cout << "Invalid number of players. Please enter a number between 2 and 4.\n";
     }
 
-    int firstPlayer = chooseToStart(numPlayers);
-
     vector<Player> players;
+    Board board;
     for (int i = 0; i < numPlayers; i++) {
         players.push_back(Player(i));
     }
 
-    Board board;
-    int currentPlayer = firstPlayer;
-    while (true) {
-        std::cout << "Player " << currentPlayer + 1 << "'s turn. Press Enter to roll the dice." << endl;
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
-        cin.get();
+    int currentPlayerIndex = chooseToStart(numPlayers);
+    cout << "Player " << currentPlayerIndex + 1 << " starts the game!\n";
 
-        playerTurn(players[currentPlayer], board);
+    bool gameOver = false;
+
+    while (!gameOver) {
+        Player& currentPlayer = players[currentPlayerIndex];
+        cout << "\nPlayer " << currentPlayerIndex + 1 << "'s turn.\n";
+        playerTurn(currentPlayer, board);
         displayBoard(players);
 
-        if (players[currentPlayer].allTokensInHome()) {
-            cout << "Player " << currentPlayer + 1 << " has won the game!\n";
-            break;
+        if (currentPlayer.allTokensInHome()) {
+            cout << "Player " << currentPlayerIndex + 1 << " wins!\n";
+            gameOver = true;
+        } else {
+            currentPlayerIndex = (currentPlayerIndex + 1) % numPlayers;
         }
-
-        currentPlayer = (currentPlayer + 1) % numPlayers;
     }
 
     return 0;
