@@ -192,29 +192,49 @@ void playerTurn(Player& player, const Board& board) {
                 cout << "You rolled a 6. No tokens are in play, so you must enter a token into play.\n";
                 player.enterTokenIntoPlay();
             } else {
-                // If one to three tokens are in play, give the player a choice
-                int choice = 0;
-                while (choice != 1 && choice != 2) {
-                    cout << "You rolled a 6. Choose an option:\n";
-                    cout << "1. Move a token 6 spaces.\n";
-                    cout << "2. Enter a new token into play.\n";
-                    cin >> choice;
-                    if (choice != 1 && choice != 2) {
-                        cout << "Invalid choice. Try again.\n";
+                // Check if there are tokens not in play
+                bool canEnterNewToken = false;
+                for (const auto& token : player.tokens) {
+                    if (!token.inPlay) {
+                        canEnterNewToken = true;
+                        break;
                     }
                 }
-                if (choice == 1) {
-                    // Prompt the user to choose a token to move 6 spaces
-                    cout << "Choose a token to move 6 spaces (1-" << player.tokens.size() << "):\n";
-                    int tokenIndex;
-                    cin >> tokenIndex;
-                    while (tokenIndex < 1 || tokenIndex > player.tokens.size() || !player.tokens[tokenIndex - 1].inPlay) {
-                        cout << "Invalid choice. Choose a valid token to move 6 spaces (1-" << player.tokens.size() << "):\n";
-                        cin >> tokenIndex;
+
+                // If there are tokens not in play, give the player a choice
+                if (canEnterNewToken) {
+                    int choice = 0;
+                    while (choice != 1 && choice != 2) {
+                        cout << "You rolled a 6. Choose an option:\n";
+                        cout << "1. Move a token 6 spaces.\n";
+                        cout << "2. Enter a new token into play.\n";
+                        cin >> choice;
+                        if (choice != 1 && choice != 2) {
+                            cout << "Invalid choice. Try again.\n";
+                        }
                     }
-                    player.moveToken(tokenIndex - 1, 6, board);
-                } else if (choice == 2) {
-                    player.enterTokenIntoPlay();
+                    if (choice == 1) {
+                        // Prompt the user to choose a token to move 6 spaces
+                        cout << "Choose a token to move 6 spaces (1-" << player.tokens.size() << "):\n";
+                        int tokenIndex;
+                        cin >> tokenIndex;
+                        while (tokenIndex < 1 || tokenIndex > player.tokens.size() || !player.tokens[tokenIndex - 1].inPlay) {
+                            cout << "Invalid choice. Choose a valid token to move 6 spaces (1-" << player.tokens.size() << "):\n";
+                            cin >> tokenIndex;
+                        }
+                        player.moveToken(tokenIndex - 1, 6, board);
+                    } else if (choice == 2) {
+                        player.enterTokenIntoPlay();
+                    }
+                } else {
+                    // If no tokens are left to be entered, automatically move a token
+                    cout << "All tokens are in play. Automatically moving a token 6 spaces.\n";
+                    for (int i = 0; i < player.tokens.size(); i++) {
+                        if (player.tokens[i].inPlay && !player.tokens[i].hasWon()) {
+                            player.moveToken(i, 6, board);
+                            break;
+                        }
+                    }
                 }
             }
             chances++; // Increase the chance count for each 6 rolled
@@ -256,7 +276,6 @@ void playerTurn(Player& player, const Board& board) {
 
 int main() {
     srand(time(0));
-
     int numPlayers;
 
     while (true) {
@@ -280,7 +299,7 @@ int main() {
     Board board;
     int currentPlayer = firstPlayer;
     while (true) {
-        cout << "Player " << currentPlayer + 1 << "'s turn. Press Enter to roll the dice.";
+        std::cout << "Player " << currentPlayer + 1 << "'s turn. Press Enter to roll the dice." << endl;
         cin.ignore(numeric_limits<streamsize>::max(), '\n');
         cin.get();
 
